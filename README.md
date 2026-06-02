@@ -1,5 +1,5 @@
 # LoRaWAN Raspberry Pi
- A Python wrapper for utilizing the LMIC library to transmit data from a Raspberry Pi 4 using the RFM95 module.
+A Python wrapper for utilizing the LMIC library to transmit data from a Raspberry Pi 4 using the RFM95 module.
 
 This code is adapted and modified from [lmic-rpi-fox](https://github.com/fox-iot/lmic-rpi-fox). This library provides an interface between hardware and software, consisting of a LoRa chip [RFM95](http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf) modified to operate at a frequency of 865 MHz and two indicator LEDs, one for indicating power on and the other for indicating data sending activity. 
 
@@ -47,7 +47,7 @@ $ ./build
 
 ```bash
 # Clone the repository 
-$ git clone https://github.com/cksajil/LoraWANPi.git 
+$ git clone https://github.com/harikrishnan-kp/LoRaWANPi.git 
 
 # Access the C++ example folder
 $ cd examples/cpp/ttn-abp-send 
