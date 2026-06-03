@@ -1,25 +1,37 @@
+CC ?= gcc
 CXX ?= g++
+
+CFLAGS ?= -O2 -Wall -Wextra -fPIC
 CXXFLAGS ?= -O2 -Wall -Wextra -fPIC
-CPPFLAGS ?= -I/lmic
+
+CPPFLAGS ?= -Ilmic
 LDFLAGS ?= -shared
 LDLIBS ?= -lwiringPi
 
 BUILD_DIR := build
+
 LMIC_SRCS := lmic/aes.c lmic/hal.c lmic/lmic.c lmic/oslmic.c lmic/radio.c
 NATIVE_SRC := native/lorawanpi_native.cpp
-OBJS := $(patsubst lmic/%.c,$(BUILD_DIR)/%.o,$(LMIC_SRCS)) $(BUILD_DIR)/lorawanpi_native.o
+
+LMIC_OBJS := $(patsubst lmic/%.c,$(BUILD_DIR)/%.o,$(LMIC_SRCS))
+NATIVE_OBJ := $(BUILD_DIR)/lorawanpi_native.o
+
+OBJS := $(LMIC_OBJS) $(NATIVE_OBJ)
 LIB := lorawanpi/liblorawanpi.so
 
 all: $(LIB)
 
 $(LIB): $(OBJS)
+	mkdir -p $(dir $@)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(BUILD_DIR)/%.o: lmic/%.c lmic/config.h lmic/hal.h lmic/lmic.h lmic/local_hal.h lmic/lorabase.h lmic/oslmic.h
+# Compile C sources with gcc
+$(BUILD_DIR)/%.o: lmic/%.c
 	mkdir -p $(BUILD_DIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(BUILD_DIR)/lorawanpi_native.o: $(NATIVE_SRC) lmic/lmic.h lmic/hal.h lmic/local_hal.h
+# Compile C++ bridge with g++
+$(BUILD_DIR)/lorawanpi_native.o: $(NATIVE_SRC)
 	mkdir -p $(BUILD_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
