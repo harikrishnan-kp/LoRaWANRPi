@@ -204,26 +204,6 @@ class LoraWanPi:
 
         return result
 
-    def send_rain_abp(
-        self,
-        devaddr: str,
-        nwkskey: str,
-        appskey: str,
-        rain_mm: float,
-        *,
-        use_leds: bool = True,
-        timeout_ms: int = 30000,
-    ) -> SendResult:
-        return self.send_abp(
-            devaddr,
-            nwkskey,
-            appskey,
-            encode_rain_payload(rain_mm),
-            port=1,
-            use_leds=use_leds,
-            timeout_ms=timeout_ms,
-        )
-
 
 def send_abp(
     devaddr: str,
@@ -247,26 +227,6 @@ def send_abp(
     )
 
 
-def send_rain_abp(
-    devaddr: str,
-    nwkskey: str,
-    appskey: str,
-    rain_mm: float,
-    *,
-    use_leds: bool = True,
-    timeout_ms: int = 30000,
-    library_path: Optional[str | Path] = None,
-) -> SendResult:
-    return LoraWanPi(library_path).send_rain_abp(
-        devaddr,
-        nwkskey,
-        appskey,
-        rain_mm,
-        use_leds=use_leds,
-        timeout_ms=timeout_ms,
-    )
-
-
 def send_otaa(
     deveui: str,
     appeui: str,
@@ -284,6 +244,27 @@ def send_otaa(
         appkey,
         payload,
         port=port,
+        use_leds=use_leds,
+        timeout_ms=timeout_ms,
+    )
+
+
+def send_rain_abp(
+    devaddr: str,
+    nwkskey: str,
+    appskey: str,
+    rain_mm: float,
+    *,
+    use_leds: bool = True,
+    timeout_ms: int = 30000,
+    library_path: Optional[str | Path] = None,
+) -> SendResult:
+    return LoraWanPi(library_path).send_abp(
+        devaddr,
+        nwkskey,
+        appskey,
+        encode_rain_payload(rain_mm),
+        port=1,
         use_leds=use_leds,
         timeout_ms=timeout_ms,
     )
