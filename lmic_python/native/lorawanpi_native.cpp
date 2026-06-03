@@ -30,6 +30,7 @@ struct lmic_rpi_result {
     int nack;
     int rssi_dbm;
     float snr_db;
+    int downlink_port;
     uint8_t downlink_len;
     uint8_t downlink[64];
 };
@@ -46,6 +47,7 @@ lmic_pinmap pins = {
 static volatile int send_complete = 0;
 static volatile int join_complete = 0;
 static volatile int join_failed = 0;
+static int ota_joined = 0;
 static int use_leds = 1;
 static lmic_rpi_result current_result;
 static uint8_t g_devEui[8];
@@ -111,6 +113,7 @@ void onEvent(ev_t ev)
     current_result.nack = (LMIC.txrxFlags & TXRX_NACK) ? 1 : 0;
     current_result.rssi_dbm = LMIC.rssi - 96;
     current_result.snr_db = LMIC.snr * 0.25f;
+    current_result.downlink_port = LMIC.dataLen > 0 ? LMIC.frame[LMIC.dataBeg - 1] : 0;
     current_result.downlink_len = LMIC.dataLen;
 
     if (current_result.downlink_len > sizeof(current_result.downlink)) {
@@ -163,6 +166,7 @@ extern "C" int lmic_rpi_send_abp(
     const uint8_t *payload,
     uint8_t payload_len,
     uint8_t port,
+    int confirmed,
     int leds_enabled,
     int timeout_ms,
     lmic_rpi_result *result)
@@ -217,7 +221,7 @@ extern "C" int lmic_rpi_send_abp(
         digitalWrite(STATUS_PIN_LED, LOW);
     }
 
-    int rc = LMIC_setTxData2(port, (xref2u1_t)payload, payload_len, 0);
+    int rc = LMIC_setTxData2(port, (xref2u1_t)payload, payload_len, confirmed ? 1 : 0);
     if (rc != 0) {
         current_result.status = rc;
         *result = current_result;
@@ -252,6 +256,7 @@ extern "C" int lmic_rpi_send_otaa(
     const uint8_t *payload,
     uint8_t payload_len,
     uint8_t port,
+    int confirmed,
     int leds_enabled,
     int timeout_ms,
     lmic_rpi_result *result)
@@ -313,7 +318,7 @@ extern "C" int lmic_rpi_send_otaa(
         return -4;
     }
 
-    int rc = LMIC_setTxData2(port, (xref2u1_t)payload, payload_len, 0);
+    int rc = LMIC_setTxData2(port, (xref2u1_t)payload, payload_len, confirmed ? 1 : 0);
     if (rc != 0) {
         current_result.status = rc;
         *result = current_result;
@@ -328,6 +333,141 @@ extern "C" int lmic_rpi_send_otaa(
         current_result.status = -5;
         *result = current_result;
         return -5;
+    }
+
+    ota_joined = 1;
+    *result = current_result;
+    return current_result.status;
+}
+
+extern "C" int lmic_rpi_join_otaa(
+    const char *deveui_hex,
+    const char *appeui_hex,
+    const char *appkey_hex,
+    int leds_enabled,
+    int timeout_ms,
+    lmic_rpi_result *result)
+{
+    if (result == NULL) return -1;
+    memset(&current_result, 0, sizeof(current_result));
+    current_result.status = -1;
+    *result = current_result;
+
+    if (parse_hex(deveui_hex, g_devEui, sizeof(g_devEui)) < 0 ||
+        parse_hex(appeui_hex, g_appEui, sizeof(g_appEui)) < 0 ||
+        parse_hex(appkey_hex, g_appKey, sizeof(g_appKey)) < 0) {
+        current_result.status = -2;
+        *result = current_result;
+        return -2;
+    }
+
+    use_leds = leds_enabled ? 1 : 0;
+    join_complete = 0;
+    join_failed = 0;
+    send_complete = 0;
+    ota_joined = 0;
+
+    wiringPiSetup();
+    os_init();
+    LMIC_reset();
+
+    for (int channel = 8; channel < 72; ++channel) {
+        LMIC_disableChannel(channel);
+    }
+
+    LMIC_setAdrMode(0);
+    LMIC_setLinkCheckMode(0);
+    LMIC_disableTracking();
+    LMIC_stopPingable();
+    LMIC.dn2Dr = 8;
+    LMIC_setDrTxpow(DEFAULT_DATA_RATE, DEFAULT_TX_POWER);
+
+    if (use_leds) {
+        pinMode(STATUS_PIN_LED, OUTPUT);
+        pinMode(DATA_SENT_LED, OUTPUT);
+        digitalWrite(STATUS_PIN_LED, HIGH);
+        delay(100);
+        digitalWrite(STATUS_PIN_LED, LOW);
+    }
+
+    if (!LMIC_startJoining()) {
+        // no-op: already joined or joining state is active
+    }
+
+    int rc = wait_for_join(timeout_ms);
+    if (rc != 0) {
+        if (rc == -1) {
+            current_result.status = -4;
+        } else {
+            current_result.status = -2;
+        }
+        *result = current_result;
+        return current_result.status;
+    }
+
+    ota_joined = 1;
+    current_result.status = 0;
+    *result = current_result;
+    return 0;
+}
+
+extern "C" int lmic_rpi_send_otaa_after_join(
+    const uint8_t *payload,
+    uint8_t payload_len,
+    uint8_t port,
+    int confirmed,
+    int leds_enabled,
+    int timeout_ms,
+    lmic_rpi_result *result)
+{
+    if (result == NULL) return -1;
+    memset(&current_result, 0, sizeof(current_result));
+    current_result.status = -1;
+    *result = current_result;
+
+    if (!ota_joined) {
+        current_result.status = -6;
+        *result = current_result;
+        return -6;
+    }
+
+    if (payload_len > 0 && payload == NULL) {
+        current_result.status = -3;
+        *result = current_result;
+        return -3;
+    }
+
+    use_leds = leds_enabled ? 1 : 0;
+    send_complete = 0;
+
+    LMIC_setAdrMode(0);
+    LMIC_setLinkCheckMode(0);
+    LMIC_disableTracking();
+    LMIC_stopPingable();
+    LMIC.dn2Dr = 8;
+    LMIC_setDrTxpow(DEFAULT_DATA_RATE, DEFAULT_TX_POWER);
+
+    if (use_leds) {
+        pinMode(STATUS_PIN_LED, OUTPUT);
+        pinMode(DATA_SENT_LED, OUTPUT);
+        digitalWrite(STATUS_PIN_LED, HIGH);
+    }
+
+    int rc = LMIC_setTxData2(port, (xref2u1_t)payload, payload_len, confirmed ? 1 : 0);
+    if (rc != 0) {
+        current_result.status = rc;
+        *result = current_result;
+        return rc;
+    }
+
+    if (use_leds) {
+        digitalWrite(DATA_SENT_LED, HIGH);
+    }
+
+    if (wait_for_send(timeout_ms) != 0) {
+        current_result.status = -4;
+        *result = current_result;
+        return -4;
     }
 
     *result = current_result;
