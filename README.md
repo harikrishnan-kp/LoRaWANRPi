@@ -1,8 +1,8 @@
 # LoRaWAN Raspberry Pi
-A Python wrapper for utilizing the LMIC library to transmit data from a Raspberry Pi 4 using the RFM95 module.
 
-This code is adapted and modified from [lmic-rpi-fox](https://github.com/fox-iot/lmic-rpi-fox). This library provides an interface between hardware and software, consisting of a LoRa chip [RFM95](http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf) modified to operate at a frequency of 865 MHz and two indicator LEDs, one for indicating power on and the other for indicating data sending activity. 
+A Python library for LoRaWAN communication on Raspberry Pi devices using an [RFM95](http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf) transceiver and the LMIC stack. Based on and adapted from [lmic-rpi-fox](https://github.com/fox-iot/lmic-rpi-fox). 
 
+Supports OTAA and ABP activation methods and provides a simple Python API for sending uplinks and receiving downlinks.
 
 ## Setup 
 
@@ -43,41 +43,19 @@ $ cd wiringPi
 $ ./build 
 ```
 
-## Compile [LoraWANPi](https://github.com/lucasmaziero/lmic-rpi-fox.git) 
+## Build the Native Library
 
 ```bash
 # Clone the repository 
-$ git clone https://github.com/harikrishnan-kp/LoRaWANPi.git 
-
-# Access the C++ example folder
-$ cd examples/cpp/ttn-abp-send 
+$ git clone https://github.com/harikrishnan-kp/LoRaWANPi.git  
 
 # Make the project 
 $ make 
-
-# Running the program 
-$ ./ttn-abp-send 
 ```
+The native library is built as `lorawanpi/liblorawanpi.so`.
 
-## How to run
-```bash
-# LED flag (0/1) can be used as an indication for device activity and data sending
-./ttn-abp-send <DevAddr> <Nwkskey> <Appskey> <Rain_mm> <LED_FLAG>
-
-# Example
-./ttn-abp-send AB0096CD 1A2B80150C4ED6DADA2B2CFD822C6378 12345678972908DA7A6C09771181A21C 3.12 1
-```
-
-## Python wrapper
-
-The repository also contains a Python wrapper that loads the LMIC code through a native shared library. Build it on the Raspberry Pi after WiringPi is installed:
-
-```bash
-make
-```
-
-Then run Python from the repository root:
-
+## Usage
+### ABP
 ```python
 from lorawanpi import LoRaWAN, RadioConfig
 
@@ -90,11 +68,10 @@ lora.configure_abp(
 )
 
 result = lora.send(b"\x01\x38", port=1)
+
 print(result.ok)
 ```
-
-For OTAA:
-
+### OTA
 ```python
 from lorawanpi import LoRaWAN, RadioConfig
 
@@ -107,14 +84,13 @@ lora.configure_otaa(
 )
 
 result = lora.send(b"temperature=25", port=1)
+
 print(result.ack)
 ```
 
-The native library is built as `lorawanpi/liblorawanpi.so`.
-
 ## Examples
 
-C++ and Python examples are available at : `examples/`
+C++ and Python examples are available at : [examples](examples)
 
 ## License
 
