@@ -1,8 +1,9 @@
 # LoRaWAN Raspberry Pi
 
-A Python library for LoRaWAN communication on Raspberry Pi devices using an [RFM95](http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf) transceiver and the LMIC stack. Based on and adapted from [lmic-rpi-fox](https://github.com/fox-iot/lmic-rpi-fox). 
+A Python library for LoRaWAN communication on Raspberry Pi. Based on and adapted from [lmic-rpi-fox](https://github.com/fox-iot/lmic-rpi-fox). Supports OTAA and ABP activation methods and provides a simple Python API for sending uplinks and receiving downlinks.
 
-Supports OTAA and ABP activation methods and provides a simple Python API for sending uplinks and receiving downlinks.
+# Supported transceivers
+- [RFM95](http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf)
 
 ## Setup 
 - Enable the SPI interface in preferences => Raspberrry pi configuration => interfaces 
