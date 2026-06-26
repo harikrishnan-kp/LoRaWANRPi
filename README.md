@@ -5,9 +5,6 @@ A Python library for LoRaWAN communication on Raspberry Pi devices using an [RFM
 Supports OTAA and ABP activation methods and provides a simple Python API for sending uplinks and receiving downlinks.
 
 ## Setup 
-
-- Format the SD card with [SD Memory Card Formatter](https://www.sdcard.org/downloads/formatter_4/) 
-- Install the Raspbian operating system on the Raspberry Pi, which can be installed via Imager/Baleno Etcher
 - Enable the SPI interface in preferences => Raspberrry pi configuration => interfaces 
 
 ## Hardware mapping 
